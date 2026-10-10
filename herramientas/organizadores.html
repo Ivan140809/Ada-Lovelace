@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Organizadores · Ada Lovelace Day</title>
+  <link rel="stylesheet" href="../css/estilos.css">
+  <style>
+    .tools { max-width: 960px; }
+    .tools > .card + .card { margin-top: 20px; }
+    .checks { margin: 0; padding: 0; list-style: none; }
+    .checks li { display: flex; gap: 10px; align-items: baseline; padding: 8px 0; font-size: 15px; border-bottom: 1px solid var(--borde); }
+    .checks li:last-child { border-bottom: 0; }
+    .tag { flex: none; padding: 2px 8px; font-size: 12px; font-weight: 700; border-radius: 999px; }
+    .tag-ok { color: var(--ok); background: var(--ok-fondo); }
+    .tag-warn { color: var(--aviso); background: var(--aviso-fondo); }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .row > .input { flex: 1 1 260px; }
+    .row > .btn { flex: 0 0 auto; width: auto; }
+    .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+    .qr-card { padding: 16px; text-align: center; border: 1px solid var(--borde); border-radius: 14px; break-inside: avoid; page-break-inside: avoid; }
+    .qr-card > * + * { margin-top: 8px; }
+    .qr-card img { display: block; width: 100%; max-width: 230px; margin: 8px auto 0; image-rendering: pixelated; }
+    .qr-title { font-size: 18px; font-weight: 800; color: var(--azul-oscuro); }
+    .qr-link { font-size: 12px; word-break: break-all; }
+    .qr-link a { color: var(--azul); }
+    select.input { -webkit-appearance: menulist; appearance: auto; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+    textarea.mono { min-height: 120px; }
+    pre.out { margin: 0; padding: 12px; overflow-x: auto; white-space: pre; background: #F5F9FF; border: 1px solid var(--borde); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--borde); }
+    @media print {
+      body { background: #fff; }
+      .no-print, .topbar { display: none !important; }
+      .container { max-width: none; padding: 0; }
+      .card { padding: 0; box-shadow: none; }
+      .qr-grid { grid-template-columns: repeat(2, 1fr); gap: 24px; }
+      .qr-card { border: 2px solid #0B3A6E; }
+      .qr-card img { max-width: 260px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <span class="brand">Ada Lovelace Day · Organizadores</span>
+  </header>
+
+  <main class="container tools">
+    <section class="card no-print">
+      <div>
+        <p class="eyebrow">Antes del evento</p>
+        <h1>Revisión de la configuración</h1>
+      </div>
+      <p class="muted">Todo se edita en <code>js/config.js</code>. Esta lista muestra lo que todavía falta.</p>
+      <ul class="checks" id="checks"></ul>
+      <div class="stack">
+        <h2>Conexión con la Google Sheet</h2>
+        <p class="small muted">Comprueba que el Apps Script de <code>FINAL_SUBMIT_URL</code> responde (no escribe nada en la hoja).</p>
+        <button type="button" class="btn btn-secondary" id="test-endpoint">Probar conexión</button>
+        <div id="endpoint-result" class="msg" hidden></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="no-print">
+        <p class="eyebrow">Códigos QR</p>
+        <h1>Enlaces de las estaciones</h1>
+      </div>
+      <div class="stack no-print">
+        <label class="label" for="base-url">Dirección pública de la página (donde está <code>index.html</code>)</label>
+        <div class="row">
+          <input class="input mono" id="base-url" type="url" placeholder="https://usuario.github.io/busqueda-tesoro/">
+          <button type="button" class="btn" id="make-qr">Generar</button>
+          <button type="button" class="btn btn-secondary" id="print-qr">Imprimir</button>
+        </div>
+        <p class="small muted">Cada QR abre <code>?station=N&amp;k=CLAVE</code>. Al abrir un enlace en este navegador se modifica el avance de prueba guardado aquí.</p>
+        <div id="qr-msg" class="msg msg-warn" hidden></div>
+      </div>
+      <div class="qr-grid" id="qr-grid"></div>
+    </section>
+
+    <section class="card no-print">
+      <div>
+        <p class="eyebrow">Pruebas</p>
+        <h1>Probar una respuesta</h1>
+      </div>
+      <div class="row">
+        <select class="input" id="test-station" style="flex: 0 1 260px"></select>
+        <input class="input" id="test-answer" type="text" placeholder="Respuesta" autocomplete="off" spellcheck="false">
+        <button type="button" class="btn" id="test-check">Comprobar</button>
+      </div>
+      <div id="test-result" class="msg" hidden></div>
+    </section>
+
+    <section class="card no-print">
+      <div>
+        <p class="eyebrow">Respuestas</p>
+        <h1>Generar hashes de variantes</h1>
+      </div>
+      <p class="muted">Escriban las variantes aceptadas, una por línea. Copien el resultado en <code>acceptedAnswers</code> de la estación en <code>js/config.js</code>.</p>
+      <textarea class="input mono" id="variants" placeholder="Una variante por línea"></textarea>
+      <button type="button" class="btn" id="make-hashes">Generar</button>
+      <div id="hash-output" class="stack" hidden>
+        <table><thead><tr><th>Variante</th><th>Forma normalizada</th></tr></thead><tbody id="hash-table"></tbody></table>
+        <pre class="out mono" id="hash-code"></pre>
+        <button type="button" class="btn btn-secondary" id="copy-hashes">Copiar</button>
+      </div>
+    </section>
+
+    <section class="card no-print">
+      <div>
+        <p class="eyebrow">Celulares de prueba</p>
+        <h1>Reiniciar recorrido</h1>
+      </div>
+      <p class="muted">Para borrar el avance de un celular, abran en ese celular la página con <code>?reiniciar</code> al final, por ejemplo <a id="reset-link" href="../?reiniciar">../?reiniciar</a>. Pide confirmación antes de borrar.</p>
+    </section>
+  </main>
+
+  <script src="../js/config.js"></script>
+  <script src="../js/respuestas.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+  <script>
+  (function () {
+    'use strict';
+    const C = window.CONFIG;
+    const R = window.Respuestas;
+    const nums = Object.keys(C.stations).map(Number).filter(Number.isInteger).sort((a, b) => a - b);
+    const LAST = nums[nums.length - 1];
+    const $ = (sel) => document.querySelector(sel);
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const isPending = (v) => !String(v || '').trim() || /PENDIENTE/i.test(String(v));
+
+    function show(el, type, text) {
+      el.className = 'msg msg-' + type;
+      el.textContent = text;
+      el.hidden = false;
+    }
+
+    /* ---------- Revisión ---------- */
+    function review() {
+      const items = [];
+      const add = (ok, text) => items.push({ ok: !!ok, text });
+      add(!isPending(C.FINAL_SUBMIT_URL), 'FINAL_SUBMIT_URL: URL del Apps Script');
+      add(!isPending(C.FIRST_QR_MESSAGE), 'FIRST_QR_MESSAGE: mensaje para buscar el primer QR');
+      add(!isPending(C.FIRST_QR_HINT), 'FIRST_QR_HINT: pista para encontrar la estación ' + nums[0]);
+      nums.forEach((n, i) => {
+        const s = C.stations[n];
+        add(!isPending(s.videoUrl), 'Estación ' + n + ' (' + s.name + '): videoUrl');
+        if (n !== LAST) {
+          add(s.acceptedAnswers && s.acceptedAnswers.length, 'Estación ' + n + ': acceptedAnswers');
+          add(!isPending(s.nextMessage), 'Estación ' + n + ': nextMessage');
+          add(!isPending(s.searchHint), 'Estación ' + n + ': searchHint (pista para encontrar la estación ' + nums[i + 1] + ')');
+        }
+      });
+      items.sort((a, b) => a.ok - b.ok);
+      const pending = items.filter((x) => !x.ok).length;
+      $('#checks').innerHTML =
+        '<li><span class="tag ' + (pending ? 'tag-warn' : 'tag-ok') + '">' + (pending ? pending + ' pendientes' : 'Todo listo') + '</span>' +
+        '<span>Revisión de textos, videos y respuestas</span></li>' +
+        '<li id="poster-check"><span class="tag tag-warn">Revisando…</span><span>Póster: ' + esc(C.POSTER_URL) + '</span></li>' +
+        items.map((x) => '<li><span class="tag ' + (x.ok ? 'tag-ok' : 'tag-warn') + '">' + (x.ok ? 'Listo' : 'Pendiente') + '</span><span>' + esc(x.text) + '</span></li>').join('');
+
+      const img = new Image();
+      const posterCheck = (ok) => {
+        $('#poster-check').innerHTML = '<span class="tag ' + (ok ? 'tag-ok' : 'tag-warn') + '">' + (ok ? 'Listo' : 'Pendiente') + '</span>' +
+          '<span>Póster (POSTER_URL): ' + esc(C.POSTER_URL) + (ok ? '' : ' — no se encontró la imagen') + '</span>';
+      };
+      img.onload = () => posterCheck(true);
+      img.onerror = () => posterCheck(false);
+      img.src = new URL(C.POSTER_URL || 'x-no-poster', new URL('../', location.href)).href;
+    }
+
+    $('#test-endpoint').addEventListener('click', async () => {
+      const out = $('#endpoint-result');
+      if (isPending(C.FINAL_SUBMIT_URL)) return show(out, 'error', 'FINAL_SUBMIT_URL está vacía en js/config.js.');
+      show(out, 'warn', 'Probando…');
+      try {
+        const res = await fetch(C.FINAL_SUBMIT_URL);
+        const data = await res.json();
+        if (data && data.ok) show(out, 'ok', 'El endpoint responde correctamente.');
+        else show(out, 'error', 'Respuesta inesperada: ' + JSON.stringify(data));
+      } catch (err) {
+        show(out, 'error', 'No se pudo conectar (' + err.message + '). Revisen la URL (debe terminar en /exec) y que la implementación tenga acceso "Cualquier persona".');
+      }
+    });
+
+    /* ---------- QR ---------- */
+    function stationUrl(base, n) {
+      const url = new URL(base);
+      url.search = '';
+      url.hash = '';
+      url.searchParams.set('station', n);
+      if (C.stations[n].qrKey) url.searchParams.set('k', C.stations[n].qrKey);
+      return url.href;
+    }
+
+    function makeQrs() {
+      const msg = $('#qr-msg');
+      msg.hidden = true;
+      let base = $('#base-url').value.trim();
+      if (!base) {
+        $('#qr-grid').innerHTML = '';
+        return show(msg, 'warn', 'Escriban la dirección pública de la página para generar los QR.');
+      }
+      if (!/^https?:\/\//i.test(base)) base = 'https://' + base;
+      try {
+        new URL(base);
+      } catch (e) {
+        return show(msg, 'warn', 'La dirección no es válida.');
+      }
+      const canDraw = typeof window.qrcode === 'function';
+      if (!canDraw) show(msg, 'warn', 'No se pudo cargar el generador de QR (¿sin Internet?). Pueden crear los QR con estos enlaces en cualquier generador.');
+      $('#qr-grid').innerHTML = nums.map((n) => {
+        const url = stationUrl(base, n);
+        let img = '';
+        if (canDraw) {
+          const qr = window.qrcode(0, 'M');
+          qr.addData(url);
+          qr.make();
+          img = '<img alt="Código QR de la estación ' + n + '" src="' + qr.createDataURL(10, 2) + '">';
+        }
+        return '<div class="qr-card">' +
+          '<p class="eyebrow">Ada Lovelace Day</p>' +
+          '<p class="qr-title">Estación ' + n + '</p>' +
+          '<p class="small muted">' + esc(C.stations[n].name) + '</p>' +
+          img +
+          '<p class="small">Escanéenlo con la cámara del celular</p>' +
+          '<p class="qr-link no-print"><a href="' + esc(url) + '" target="_blank" rel="noopener">' + esc(url) + '</a></p>' +
+          '</div>';
+      }).join('');
+    }
+
+    if (/^https?:$/.test(location.protocol)) {
+      $('#base-url').value = new URL('../', location.href).href;
+    }
+    $('#make-qr').addEventListener('click', makeQrs);
+    $('#print-qr').addEventListener('click', () => {
+      if (!$('#qr-grid').children.length) makeQrs();
+      window.print();
+    });
+
+    /* ---------- Probar respuesta ---------- */
+    $('#test-station').innerHTML = nums.filter((n) => n !== LAST)
+      .map((n) => '<option value="' + n + '">Estación ' + n + ' · ' + esc(C.stations[n].name) + '</option>').join('');
+    const runTest = () => {
+      const n = Number($('#test-station').value);
+      const value = $('#test-answer').value;
+      const norm = R.normalizeAnswer(value);
+      const ok = R.checkAnswer(value, C.stations[n].acceptedAnswers);
+      show($('#test-result'), ok ? 'ok' : 'error', (ok ? 'Aceptada' : 'No aceptada') + ' · forma normalizada: "' + norm + '"');
+    };
+    $('#test-check').addEventListener('click', runTest);
+    $('#test-answer').addEventListener('keydown', (e) => { if (e.key === 'Enter') runTest(); });
+
+    /* ---------- Hashes ---------- */
+    $('#make-hashes').addEventListener('click', () => {
+      const lines = $('#variants').value.split('\n').map((l) => l.trim()).filter(Boolean);
+      if (!lines.length) return;
+      const seen = new Set();
+      const rows = [];
+      const hashes = [];
+      lines.forEach((line) => {
+        const norm = R.normalizeAnswer(line);
+        rows.push('<tr><td>' + esc(line) + '</td><td class="mono">' + esc(norm) + (seen.has(norm) ? ' (repetida)' : '') + '</td></tr>');
+        if (!seen.has(norm)) {
+          seen.add(norm);
+          hashes.push(R.sha256Hex(norm));
+        }
+      });
+      $('#hash-table').innerHTML = rows.join('');
+      $('#hash-code').textContent = 'acceptedAnswers: [\n' + hashes.map((h) => "  '" + h + "',").join('\n') + '\n],';
+      $('#hash-output').hidden = false;
+    });
+    $('#copy-hashes').addEventListener('click', async () => {
+      const text = $('#hash-code').textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+        $('#copy-hashes').textContent = 'Copiado';
+      } catch (e) {
+        const range = document.createRange();
+        range.selectNodeContents($('#hash-code'));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        $('#copy-hashes').textContent = 'Seleccionado: copien con Ctrl+C';
+      }
+      setTimeout(() => { $('#copy-hashes').textContent = 'Copiar'; }, 2500);
+    });
+
+    review();
+  })();
+  </script>
+</body>
+</html>
